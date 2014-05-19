@@ -13,13 +13,13 @@ module.exports = function(logger){
     var portalConfig = JSON.parse(process.env.portalConfig);
 
     var forkId = process.env.forkId;
+	   var workerban ={};
     
     var pools = {};
 
     var proxySwitch = {};
 
     var redisClient = redis.createClient(portalConfig.redis.port, portalConfig.redis.host);
-
     //Handle messages from master process sent via IPC
     process.on('message', function(message) {
         switch(message.type){
@@ -180,17 +180,92 @@ module.exports = function(logger){
 
             var shareData = JSON.stringify(data);
 
+
+
             if (data.blockHash && !isValidBlock)
                 logger.debug(logSystem, logComponent, logSubCat, 'We thought a block was found but it was rejected by the daemon, share data: ' + shareData);
 
-            else if (isValidBlock)
+            else if (isValidBlock) 
                 logger.debug(logSystem, logComponent, logSubCat, 'Block found: ' + data.blockHash);
 
-            if (isValidShare)
+
+            if (isValidShare) {
                 logger.debug(logSystem, logComponent, logSubCat, 'Share accepted at diff ' + data.difficulty + '/' + data.shareDiff + ' by ' + data.worker + ' [' + data.ip + ']' );
 
-            else if (!isValidShare)
+	if (portalConfig.fail2ban.enabled) {
+
+	  redisClient.hgetall("banned", function(error, obj) {
+            if (!error && obj) {
+                banned = obj;
+		//logger.debug(logSystem, logComponent, logSubCat, 'REDIS GOT '+ banned[data.ip]);
+
+		if (parseInt(banned[data.ip]) > 1) {
+			logger.debug(logSystem, logComponent, logSubCat, 'IPTABLES: Remove user '+ data.ip);
+
+			var exec = require('child_process').exec,
+			    child;
+
+			child = exec('fail2ban-client set stratum unbanip '+data.ip,
+			  function (error, stdout, stderr) {
+			    console.log('stdout: ' + stdout);
+			 //   console.log('stderr: ' + stderr);
+			    if (error !== null) {
+			  //    console.log('exec error: ' + error);
+			    }
+			   });
+
+
+			 var redisCommands = [];
+ 			redisCommands.push(['del', 'banned', data.ip ]);
+
+		         redisClient.multi(redisCommands).exec(function(err, replies){
+		            if (err)
+		                logger.error(logSystem, logComponent, logSubCat, 'Error with increasing banned for worker ' + JSON.stringify(replies));
+		         });
+
+		} else {
+			//logger.debug(logSystem, logComponent, logSubCat, 'REDIS says '+ banned[data.ip]);
+		}
+            }
+	
+	  });
+          }
+
+           } else if (!isValidShare) {
                 logger.debug(logSystem, logComponent, logSubCat, 'Share rejected: ' + shareData);
+
+
+          if (portalConfig.fail2ban.enabled) {
+		var banned = {};
+
+
+	  redisClient.hgetall("banned", function(error, obj) {
+            if (!error && obj) {
+                banned = obj;
+		//logger.debug(logSystem, logComponent, logSubCat, 'REDIS GOT '+ banned[data.ip]);
+
+		if (parseInt(banned[data.ip]) > 5) {
+			logger.debug(logSystem, logComponent, logSubCat, 'IPTABLES: bad '+ data.ip);
+		} else {
+			//logger.debug(logSystem, logComponent, logSubCat, 'REDIS says '+ banned[data.ip]);
+		}
+            }
+	
+	  });
+
+
+
+
+	    var redisCommands = [];
+	    redisCommands.push(['hincrby', 'banned', data.ip , 1]);
+
+	    redisClient.multi(redisCommands).exec(function(err, replies){
+              if (err)
+                  logger.error(logSystem, logComponent, logSubCat, 'Error with increasing banned for worker ' + JSON.stringify(replies));
+            });
+
+	}
+	   }
 
             handlers.share(isValidShare, isValidBlock, data)
 

@@ -265,6 +265,12 @@ Explanation for each field:
         "port": 6379
     },
 
+    /* Fail2ban module */
+
+    "fail2ban": {
+        "enabled": false
+    },
+
 
     /* With this switching configuration, you can setup ports that accept miners for work based on
        a specific algorithm instead of a specific coin. Miners that connect to these ports are
@@ -550,7 +556,7 @@ Credits
 * [Alex Petrov / sysmanalex](https://github.com/sysmanalex) - contributed the pure C block notify script
 * [svirusxxx](//github.com/svirusxxx) - sponsored development of MPOS mode
 * [icecube45](//github.com/icecube45) - helping out with the repo wiki
-* [Fcases](//github.com/Fcases) - ordered me a pizza <3
+* [Fcases](//github.com/Fcases) - ordered me a few pizzas <3
 * Those that contributed to [node-stratum-pool](//github.com/zone117x/node-stratum-pool#credits)
 
 
