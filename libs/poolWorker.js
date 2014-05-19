@@ -194,30 +194,32 @@ module.exports = function(logger){
 
 	if (portalConfig.fail2ban.enabled) {
 
-	  redisClient.hgetall("banned", function(error, obj) {
-            if (!error && obj) {
-                banned = obj;
-		//logger.debug(logSystem, logComponent, logSubCat, 'REDIS GOT '+ banned[data.ip]);
+            if (portalConfig.fail2ban.disablebans.enabled) {
 
-		if (parseInt(banned[data.ip]) > 1) {
-			logger.debug(logSystem, logComponent, logSubCat, 'IPTABLES: Remove user '+ data.ip);
+		  redisClient.hgetall("banned", function(error, obj) {
+	            if (!error && obj) {
+	                banned = obj;
+			//logger.debug(logSystem, logComponent, logSubCat, 'REDIS GOT '+ banned[data.ip]);
 
-			var exec = require('child_process').exec,
-			    child;
+			if (parseInt(banned[data.ip]) > 1) {
+				logger.debug(logSystem, logComponent, logSubCat, 'IPTABLES: Remove user '+ data.ip);
 
-			child = exec('fail2ban-client set stratum unbanip '+data.ip,
-			  function (error, stdout, stderr) {
-			    console.log('stdout: ' + stdout);
-			 //   console.log('stderr: ' + stderr);
-			    if (error !== null) {
-			  //    console.log('exec error: ' + error);
-			    }
-			   });
+				var exec = require('child_process').exec,
+				    child;
+
+				child = exec('fail2ban-client set stratum unbanip '+data.ip,
+				  function (error, stdout, stderr) {
+				  console.log('stdout: ' + stdout);
+				 //   console.log('stderr: ' + stderr);
+				    if (error !== null) {
+				  //    console.log('exec error: ' + error);
+				    }
+			          });
 
 
-			 var redisCommands = [];
  			redisCommands.push(['del', 'banned', data.ip ]);
-
+			 var redisCommands = [];
+		
 		         redisClient.multi(redisCommands).exec(function(err, replies){
 		            if (err)
 		                logger.error(logSystem, logComponent, logSubCat, 'Error with increasing banned for worker ' + JSON.stringify(replies));
@@ -229,13 +231,15 @@ module.exports = function(logger){
             }
 	
 	  });
-          }
+
+}          }
 
            } else if (!isValidShare) {
                 logger.debug(logSystem, logComponent, logSubCat, 'Share rejected: ' + shareData);
 
 
           if (portalConfig.fail2ban.enabled) {
+
 		var banned = {};
 
 
