@@ -282,7 +282,8 @@ bantime  = 300
     */
 
     "fail2ban": {
-        "enabled": false
+        "enabled": false,
+	"disablebans" : false
     },
 
 
