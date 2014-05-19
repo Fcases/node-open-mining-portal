@@ -265,7 +265,21 @@ Explanation for each field:
         "port": 6379
     },
 
-    /* Fail2ban module */
+    /* Fail2ban module 
+
+/etc/fail2ban/filter.d/stratum.conf
+
+[Definition]
+
+_jailname = stratum
+
+failregex = Failed worker authorization: IP <HOST>
+            Failed message: .*? from <HOST>
+            IPTABLES: bad <HOST>
+
+bantime  = 300
+
+    */
 
     "fail2ban": {
         "enabled": false
