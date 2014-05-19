@@ -50,6 +50,10 @@
         "port": 6379
     },
 
+    "fail2ban": {
+	"enabled": false
+    }
+
     "switching": {
         "switch1": {
             "enabled": false,
